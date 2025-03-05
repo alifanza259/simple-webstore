@@ -1,0 +1,16 @@
+{
+  "dependencies": {
+    "fastify": "^5.2.1"
+  },
+  "scripts": {
+    "start": "node server.js"
+  },
+  "name": "simple-webstore",
+  "version": "1.0.0",
+  "main": "server.js",
+  "devDependencies": {},
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": ""
+}
