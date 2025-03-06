@@ -6,20 +6,38 @@ type Product = {
   category: string;
 };
 
+type Meta = {
+  page: number;
+  perPage: number;
+  totalItems: number;
+  totalPages: number;
+};
+
 import { Button } from "@/components/ui/button";
 import Search from "./search";
 
 export default async function AdminProduct({
   searchParams,
 }: {
-  searchParams: { title?: string; category?: string };
+  searchParams: {
+    title?: string;
+    category?: string;
+    page?: string;
+    perPage?: string;
+  };
 }) {
-  const { title = "", category = "" } = await searchParams;
+  const {
+    title = "",
+    category = "",
+    page = "1",
+    perPage = "10",
+  } = await searchParams;
 
   const response = await fetch(
-    `http://localhost:3001/products?title=${title}&category=${category}`
+    `http://localhost:3001/products?title=${title}&category=${category}&page=${page}&perPage=${perPage}`
   );
-  const data: Product[] = (await response.json()).data;
+  const { data, meta }: { data: Product[]; meta: Meta } = await response.json();
+  console.log(meta);
 
   return (
     <div className="relative overflow-x-auto shadow-md sm:rounded-lg">
@@ -32,6 +50,8 @@ export default async function AdminProduct({
           <Button>Add Product</Button>
         </div>
       </div>
+      <br />
+      <div>Item per page: {meta.perPage}</div>
       <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
         <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
           <tr>
@@ -83,6 +103,20 @@ export default async function AdminProduct({
           ))}
         </tbody>
       </table>
+      <div className="flex justify-between">
+        <div>
+          Showing {(parseInt(page) - 1) * parseInt(perPage) + 1} to {Math.min(parseInt(page) * parseInt(perPage), meta.totalItems)} of{" "}
+          {meta.totalItems} entries
+        </div>
+        <div className="flex">
+          <Button disabled={parseInt(page)===1} style={{marginRight: '15px'}}>
+            <a href={`/admin/products?title=${title}&category=${category}&page=${parseInt(page)-1}&perPage=${perPage}`} >Previous</a>
+          </Button>
+          <Button disabled={parseInt(page)>=meta.totalPages}>
+            <a style={{paddingRight: '15px'}} href={`/admin/products?title=${title}&category=${category}&page=${parseInt(page)+1}&perPage=${perPage}`}>Next</a>
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

@@ -1,28 +1,41 @@
 const { pool } = require("../database");
 
 const getProducts = async (req, reply) => {
-  const title = req.query.title;
-  const category = req.query.category;
+  const { page = 1, perPage = 10, title, category } = req.query;
   const values = [];
   let index = 1;
-  
+
   let query =
-    "SELECT id, title, price, description, category, image, stock FROM products WHERE 1=1 ";
+    "SELECT id, title, price, description, category, image, stock FROM products WHERE 1=1";
+  let countQuery = "SELECT COUNT(1) FROM products WHERE 1=1";
 
   if (title) {
-    query += `AND title ILIKE $${index} `;
+    countQuery += ` AND title ILIKE $${index}`;
+    query += ` AND title ILIKE $${index}`;
     values.push(`%${title}%`);
     index++;
   }
   if (category) {
-    query += `AND category ILIKE $${index}`;
+    countQuery += ` AND category ILIKE $${index}`;
+    query += ` AND category ILIKE $${index}`;
     values.push(`%${category}%`);
+    index++;
   }
+
+  const resultCount = await pool.query(countQuery, values);
+  const totalItems = parseInt(resultCount.rows[0].count, 10);
+  const totalPages = Math.ceil(totalItems / perPage);
+
+  query += ` LIMIT $${index} OFFSET $${index + 1}`;
+  values.push(perPage, page - 1);
 
   const result = await pool.query(query, values);
   const products = result.rows;
 
-  return reply.send({ data: products });
+  return reply.send({
+    data: products,
+    meta: { page, perPage, totalPages, totalItems },
+  });
 };
 
 const createProduct = async (req, reply) => {
@@ -153,6 +166,15 @@ const getProductsOpts = {
               type: "object",
               properties: Product,
             },
+          },
+        },
+        meta: {
+          type: "object",
+          properties: {
+            page: { type: "integer" },
+            perPage: { type: "integer" },
+            totalPages: { type: "integer" },
+            totalItems: { type: "integer" },
           },
         },
       },
