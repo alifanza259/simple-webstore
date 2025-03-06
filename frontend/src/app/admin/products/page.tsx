@@ -15,6 +15,7 @@ type Meta = {
 
 import { Button } from "@/components/ui/button";
 import Search from "./search";
+import DeleteProduct from "./delete";
 
 export default async function AdminProduct({
   searchParams,
@@ -90,14 +91,7 @@ export default async function AdminProduct({
               </td>
               <td className="px-6 py-4 text-ellipsis">{d.category}</td>
               <td className="px-6 py-4">
-                <Button>
-                  <a
-                    href="#"
-                    className="font-medium text-blue-600 dark:text-blue-500 hover:underline"
-                  >
-                    Delete
-                  </a>
-                </Button>
+                <DeleteProduct productId={d.id} />
               </td>
             </tr>
           ))}

@@ -27,7 +27,7 @@ const getProducts = async (req, reply) => {
   const totalPages = Math.ceil(totalItems / perPage);
 
   query += ` LIMIT $${index} OFFSET $${index + 1}`;
-  values.push(perPage, page - 1);
+  values.push(perPage, (page - 1) * perPage);
 
   const result = await pool.query(query, values);
   const products = result.rows;

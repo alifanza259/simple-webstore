@@ -1,10 +1,12 @@
 const fastify = require("fastify")({ logger: true });
 const { validateDbConnection } = require("./database");
 const productRoutes = require("./routes/products");
-
 const PORT = 3001;
 
 fastify.register(productRoutes);
+fastify.register(require("@fastify/cors"), {
+  origin: "*",
+});
 
 const start = async () => {
   try {
