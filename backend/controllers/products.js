@@ -1,10 +1,25 @@
 const { pool } = require("../database");
 
 const getProducts = async (req, reply) => {
-  const query =
-    "SELECT id, title, price, description, category, image, stock FROM products;";
+  const title = req.query.title;
+  const category = req.query.category;
+  const values = [];
+  let index = 1;
+  
+  let query =
+    "SELECT id, title, price, description, category, image, stock FROM products WHERE 1=1 ";
 
-  const result = await pool.query(query);
+  if (title) {
+    query += `AND title ILIKE $${index} `;
+    values.push(`%${title}%`);
+    index++;
+  }
+  if (category) {
+    query += `AND category ILIKE $${index}`;
+    values.push(`%${category}%`);
+  }
+
+  const result = await pool.query(query, values);
   const products = result.rows;
 
   return reply.send({ data: products });
