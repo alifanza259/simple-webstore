@@ -4,6 +4,8 @@ type Product = {
   price: number;
   description: string;
   category: string;
+  stock: number;
+  image: string;
 };
 
 type Meta = {
@@ -16,6 +18,7 @@ type Meta = {
 import { Button } from "@/components/ui/button";
 import Search from "./search";
 import DeleteProduct from "./delete";
+import AddEdit from "./addEdit";
 
 export default async function AdminProduct({
   searchParams,
@@ -38,7 +41,6 @@ export default async function AdminProduct({
     `http://localhost:3001/products?title=${title}&category=${category}&page=${page}&perPage=${perPage}`
   );
   const { data, meta }: { data: Product[]; meta: Meta } = await response.json();
-  console.log(meta);
 
   return (
     <div className="relative overflow-x-auto shadow-md sm:rounded-lg">
@@ -48,7 +50,7 @@ export default async function AdminProduct({
           <Search />
         </div>
         <div className="relative">
-          <Button>Add Product</Button>
+          <AddEdit />
         </div>
       </div>
       <br />
@@ -91,6 +93,7 @@ export default async function AdminProduct({
               </td>
               <td className="px-6 py-4 text-ellipsis">{d.category}</td>
               <td className="px-6 py-4">
+                <AddEdit data={d}/>
                 <DeleteProduct productId={d.id} />
               </td>
             </tr>
