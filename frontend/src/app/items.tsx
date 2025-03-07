@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import { useEffect, useRef, useState } from "react";
 
 type Product = {
@@ -36,27 +37,41 @@ export default function Items({
   const [products, setProducts] = useState<Product[]>(initialItems);
   const [offset, setOffset] = useState(initialItems.length);
   const observerRef = useRef(null);
-  
-  async function test() {
-    const { data } = await fetchData(
-      offset,
-      meta.perPage,
-      title,
-      category
-    );
-
-    setOffset(offset + data.length);
-    setProducts(products.concat(data));
-  }
 
   const loadMore = async () => {
     setLoading(true);
 
-    setTimeout(async () => {
-      await test();
-      setLoading(false);
-    }, 500);
+    const { data } = await fetchData(offset, meta.perPage, title, category);
+
+    setOffset(offset + data.length);
+    setProducts(products.concat(data));
+
+    setLoading(false);
   };
+
+  function handleBuy(p: Product) {
+    let userCartString = localStorage.getItem("carts");
+
+    let userCart = userCartString == null ? [] : JSON.parse(userCartString);
+
+    const i = userCart.findIndex((e: any) => e.productId === p.id);
+
+    if (i !== -1) {
+      userCart[i].amount += 1;
+    } else {
+      userCart.push({
+        productId: p.id,
+        productName: p.title,
+        price: p.price,
+        image: p.image,
+        amount: 1,
+      });
+    }
+
+    localStorage.setItem("carts", JSON.stringify(userCart));
+
+    window.location.reload();
+  }
 
   useEffect(() => {
     setProducts(initialItems);
@@ -72,7 +87,7 @@ export default function Items({
           loadMore();
         }
       },
-      { threshold: 0.1}
+      { threshold: 0.1 }
     );
 
     if (observerRef.current) observer.observe(observerRef.current);
@@ -100,10 +115,11 @@ export default function Items({
               <div className="px-6 py-4">
                 <div className="text-xl mb-2">Price: {p.price}</div>
               </div>
-              <div className="px-6 pt-4 pb-2">
+              <div className="flex px-6 pt-4 pb-2 justify-between">
                 <span className="inline-block bg-gray-200 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2 mb-2">
                   #{p.category}
                 </span>
+                <Button onClick={() => handleBuy(p)}>Buy</Button>
               </div>
             </div>
             <br />

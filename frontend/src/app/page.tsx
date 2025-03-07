@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import Search from "./search";
 import Items from "./items";
+import Cart from "./cart";
 
 type Product = {
   id: number;
@@ -55,6 +56,7 @@ export default async function Home({
           <a href="/admin/products">Go To Admin Page</a>
         </Button>
       </div>
+      <Cart />
       <div>
         <Search />
         <Items
