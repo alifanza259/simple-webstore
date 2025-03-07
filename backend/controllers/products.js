@@ -1,7 +1,7 @@
 const { pool } = require("../database");
 
 const getProducts = async (req, reply) => {
-  const { page = 1, perPage = 10, title, category } = req.query;
+  const { page, perPage, title, category, offset } = req.query;
   const values = [];
   let index = 1;
 
@@ -24,17 +24,23 @@ const getProducts = async (req, reply) => {
 
   const resultCount = await pool.query(countQuery, values);
   const totalItems = parseInt(resultCount.rows[0].count, 10);
-  const totalPages = Math.ceil(totalItems / perPage);
 
-  query += ` LIMIT $${index} OFFSET $${index + 1}`;
-  values.push(perPage, (page - 1) * perPage);
+  let totalPages;
+  if ((page || offset) && perPage) {
+    totalPages = Math.ceil(totalItems / perPage);
+
+    const offsetData = page ? (page - 1) * perPage : offset;
+
+    query += ` LIMIT $${index} OFFSET $${index + 1}`;
+    values.push(perPage, offsetData);
+  }
 
   const result = await pool.query(query, values);
   const products = result.rows;
 
   return reply.send({
     data: products,
-    meta: { page, perPage, totalPages, totalItems },
+    meta: { page: parseInt(page), perPage: parseInt(perPage), totalPages, totalItems },
   });
 };
 
@@ -188,8 +194,7 @@ const adjustStock = async (req, reply) => {
 };
 
 const getStockLogs = async (req, reply) => {
-  const query =
-    `SELECT sl.id as "logId", p.id as "productId", p.title as "productName", activity, changes, transaction_date as "transactionDate" 
+  const query = `SELECT sl.id as "logId", p.id as "productId", p.title as "productName", activity, changes, transaction_date as "transactionDate" 
       FROM stock_logs sl
       JOIN products p ON p.id = sl.product_id
       ORDER BY transaction_date DESC;`;
