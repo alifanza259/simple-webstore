@@ -5,6 +5,7 @@ const {
   deleteProductOpts,
   importProductsOpts,
   adjustStockOpts,
+  getStockLogsOpts,
 } = require("../controllers/products");
 
 function productRoutes(fastify, options, done) {
@@ -15,6 +16,7 @@ function productRoutes(fastify, options, done) {
 
   fastify.post("/import-products", importProductsOpts);
   fastify.patch("/product/:id/adjust-stock", adjustStockOpts);
+  fastify.get("/stock-logs", getStockLogsOpts);
 
   done();
 }
