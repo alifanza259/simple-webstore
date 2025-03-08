@@ -13,7 +13,7 @@ import {
 
 export default function DeleteProduct({ productId }: { productId: number }) {
   function handleDelete() {
-    fetch("http://localhost:3001/product/" + productId, {
+    fetch(`${process.env.APP_URL}/product/${productId}`, {
       method: "DELETE",
     }).then((res) => {
       window.location.reload();

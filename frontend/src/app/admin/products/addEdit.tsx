@@ -47,7 +47,7 @@ export default function AddEdit({ data }: { data?: Product }) {
   }, [data]); // Runs only when `data` changes
 
   async function handleSubmit() {
-    const url = "http://localhost:3001";
+    const url = `${process.env.APP_URL}`;
     const body = {
       title,
       category,

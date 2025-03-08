@@ -38,7 +38,7 @@ export default async function AdminProduct({
   } = await searchParams;
 
   const response = await fetch(
-    `http://localhost:3001/products?title=${title}&category=${category}&page=${page}&perPage=${perPage}`
+    `${process.env.APP_URL}/products?title=${title}&category=${category}&page=${page}&perPage=${perPage}`
   );
   const { data, meta }: { data: Product[]; meta: Meta } = await response.json();
 

@@ -1,7 +1,6 @@
 const fastify = require("fastify")({ logger: true });
 const { validateDbConnection } = require("./database");
 const productRoutes = require("./routes/products");
-const PORT = 3001;
 
 fastify.register(productRoutes);
 fastify.register(require("@fastify/cors"), {
@@ -11,8 +10,9 @@ fastify.register(require("@fastify/cors"), {
 const start = async () => {
   try {
     validateDbConnection();
-    
-    fastify.listen({ host: "localhost", port: PORT });
+
+    const [host, port] = process.env.APP_URL.split(":");
+    fastify.listen({ host, port });
 
     process.on("SIGTERM", () => {
       console.info(`Termination by SIGTERM`);

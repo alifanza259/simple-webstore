@@ -9,7 +9,7 @@ type StockLog = {
 };
 
 export default async function AdminStocks() {
-  const response = await fetch(`http://localhost:3001/stock-logs`);
+  const response = await fetch(`${process.env.APP_URL}/product/stock-logs`);
   const logs: StockLog[] = (await response.json()).data;
 
   return (

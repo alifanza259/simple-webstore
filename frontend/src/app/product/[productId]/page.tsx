@@ -16,7 +16,7 @@ export default async function ProductDetail({
   params: { productId: string };
 }) {
   const { productId } = await params;
-  const response = await fetch(`http://localhost:3001/product/${productId}`);
+  const response = await fetch(`${process.env.APP_URL}/product/${productId}`);
   const product: Product = (await response.json()).data;
 
   return (

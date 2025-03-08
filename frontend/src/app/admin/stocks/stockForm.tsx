@@ -35,7 +35,7 @@ export default function Search() {
   const handleSearch = async (term: string) => {
     setQuery(term);
 
-    const response = await fetch("http://localhost:3001/stock-logs");
+    const response = await fetch(`${process.env.APP_URL}/product/stock-logs`);
     const products = await response.json();
 
     setProduct(products.data);
@@ -43,7 +43,7 @@ export default function Search() {
 
   const handleUpdate = async () => {
     const response = await fetch(
-      `http://localhost:3001/product/${selectedProductId}/adjust-stock`,
+      `${process.env.APP_URL}/product/${selectedProductId}/adjust-stock`,
       {
         method: "PATCH",
         body: JSON.stringify({

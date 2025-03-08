@@ -45,7 +45,7 @@ export default async function Home({
       ...(lastProductId != null && { lastProductId: lastProductId.toString() })
     });
     const response = await fetch(
-      `http://localhost:3001/products?${params.toString()}`
+      `${process.env.APP_URL}/products?${params.toString()}`
     );
     const { data, meta }: { data: Product[]; meta: Meta } =
       await response.json();
