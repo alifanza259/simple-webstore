@@ -53,6 +53,11 @@ export default function Checkout() {
       alert(`Total Price: ${totalPrice}`);
       alert(`Thank you for shopping with us`);
 
+      window.dataLayer = window.dataLayer || [];
+      window.dataLayer.push({
+        event: "checkout-success",
+      });
+
       localStorage.removeItem("carts");
       window.location.replace("/");
     }

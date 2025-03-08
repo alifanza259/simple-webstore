@@ -40,7 +40,26 @@ const getProducts = async (req, reply) => {
 
   return reply.send({
     data: products,
-    meta: { page: parseInt(page), perPage: parseInt(perPage), totalPages, totalItems },
+    meta: {
+      page: parseInt(page),
+      perPage: parseInt(perPage),
+      totalPages,
+      totalItems,
+    },
+  });
+};
+
+const getProductDetail = async (req, reply) => {
+  const id = req.params.id;
+
+  let query =
+    "SELECT id, title, price, description, category, image, stock FROM products WHERE id=$1";
+
+  const result = await pool.query(query, [id]);
+  const product = result.rows[0];
+
+  return reply.send({
+    data: product,
   });
 };
 
@@ -368,6 +387,20 @@ const getStockLogsOpts = {
   handler: getStockLogs,
 };
 
+const getProductDetailOpts = {
+  schema: {
+    response: {
+      200: {
+        data: {
+          type: "object",
+          properties: Product,
+        },
+      },
+    },
+  },
+  handler: getProductDetail,
+};
+
 module.exports = {
   getProductsOpts,
   createProductOpts,
@@ -376,4 +409,5 @@ module.exports = {
   importProductsOpts,
   adjustStockOpts,
   getStockLogsOpts,
+  getProductDetailOpts
 };
