@@ -31,22 +31,28 @@ export default async function Home({
   const { title = "", category = "" } = await searchParams;
 
   async function fetchData(
-    offset: number,
     perPage: number,
     title?: string,
-    category?: string
+    category?: string,
+    lastProductId?: number | null,
   ) {
     "use server";
 
+    const params = new URLSearchParams({
+      perPage: perPage.toString(),
+      ...(title && { title }),
+      ...(category && { category }),
+      ...(lastProductId != null && { lastProductId: lastProductId.toString() })
+    });
     const response = await fetch(
-      `http://localhost:3001/products?title=${title}&category=${category}&offset=${offset}&perPage=${perPage}`
+      `http://localhost:3001/products?${params.toString()}`
     );
     const { data, meta }: { data: Product[]; meta: Meta } =
       await response.json();
 
     return { data, meta };
   }
-  const { data: items, meta } = await fetchData(0, 10, title, category);
+  const { data: items, meta } = await fetchData(10, title, category, null);
 
   return (
     <div>

@@ -35,17 +35,14 @@ export default function Items({
 }) {
   const [loading, setLoading] = useState(false);
   const [products, setProducts] = useState<Product[]>(initialItems);
-  const [offset, setOffset] = useState(initialItems.length);
   const observerRef = useRef(null);
 
   const loadMore = async () => {
     setLoading(true);
 
-    const { data } = await fetchData(offset, meta.perPage, title, category);
+    const { data } = await fetchData(meta.perPage, title, category, products[products.length-1]?.id);
 
-    setOffset(offset + data.length);
     setProducts(products.concat(data));
-
     setLoading(false);
   };
 
@@ -75,7 +72,6 @@ export default function Items({
 
   useEffect(() => {
     setProducts(initialItems);
-    setOffset(initialItems.length);
   }, [initialItems]);
 
   useEffect(() => {

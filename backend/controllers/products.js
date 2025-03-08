@@ -1,51 +1,19 @@
 const { pool } = require("../database");
+const { getProducts } = require("../services/products");
 
-const getProducts = async (req, reply) => {
-  const { page, perPage, title, category, offset } = req.query;
-  const values = [];
-  let index = 1;
-
-  let query =
-    "SELECT id, title, price, description, category, image, stock FROM products WHERE 1=1";
-  let countQuery = "SELECT COUNT(1) FROM products WHERE 1=1";
-
-  if (title) {
-    countQuery += ` AND title ILIKE $${index}`;
-    query += ` AND title ILIKE $${index}`;
-    values.push(`%${title}%`);
-    index++;
-  }
-  if (category) {
-    countQuery += ` AND category ILIKE $${index}`;
-    query += ` AND category ILIKE $${index}`;
-    values.push(`%${category}%`);
-    index++;
-  }
-
-  const resultCount = await pool.query(countQuery, values);
-  const totalItems = parseInt(resultCount.rows[0].count, 10);
-
-  let totalPages;
-  if ((page || offset) && perPage) {
-    totalPages = Math.ceil(totalItems / perPage);
-
-    const offsetData = page ? (page - 1) * perPage : offset;
-
-    query += ` LIMIT $${index} OFFSET $${index + 1}`;
-    values.push(perPage, offsetData);
-  }
-
-  const result = await pool.query(query, values);
-  const products = result.rows;
+const getProductsController = async (req, reply) => {
+  const { page = 1, perPage, title, category, lastProductId } = req.query;
+  const { products, meta } = await getProducts({
+    page,
+    perPage,
+    title,
+    category,
+    lastProductId,
+  });
 
   return reply.send({
     data: products,
-    meta: {
-      page: parseInt(page),
-      perPage: parseInt(perPage),
-      totalPages,
-      totalItems,
-    },
+    meta,
   });
 };
 
@@ -359,7 +327,7 @@ const getProductsOpts = {
       },
     },
   },
-  handler: getProducts,
+  handler: getProductsController,
 };
 
 const createProductOpts = {
