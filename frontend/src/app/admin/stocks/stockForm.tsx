@@ -16,34 +16,39 @@ import {
 } from "@/components/ui/popover";
 import { useState } from "react";
 
-type StockLog = {
-  logId: number;
-  productId: number;
-  productName: string;
-  changes: number;
-  transactionDate: number;
-  activity: string;
+type Product = {
+  id: number;
+  title: string;
+  price: number;
+  description: string;
+  category: string;
+  stock: number;
+  image: string;
 };
 
 export default function Search() {
-  const [product, setProduct] = useState<StockLog[]>([]);
+  const [product, setProduct] = useState<Product[]>([]);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [selectedProductId, setSelectedProductId] = useState(0);
+  const [selectedProduct, setSelectedProduct] = useState<Product>();
   const [amount, setAmount] = useState(0);
 
   const handleSearch = async (term: string) => {
     setQuery(term);
 
-    const response = await fetch(`${process.env.APP_URL}/product/stock-logs`);
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_APP_URL}/products?title=${term}`
+    );
     const products = await response.json();
 
     setProduct(products.data);
   };
 
   const handleUpdate = async () => {
+    if (selectedProduct == null) return;
+
     const response = await fetch(
-      `${process.env.APP_URL}/product/${selectedProductId}/adjust-stock`,
+      `${process.env.NEXT_PUBLIC_APP_URL}/product/${selectedProduct.id}/adjust-stock`,
       {
         method: "PATCH",
         body: JSON.stringify({
@@ -59,50 +64,62 @@ export default function Search() {
   };
 
   return (
-    <div className="flex flex-col space-y-2">
-      <p className="text-sm text-muted-foreground">Product</p>
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button variant="outline" className="w-[150px] justify-start">
-            {selectedProductId ? selectedProductId : "+ Select product"}
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="p-0" side="right" align="start">
-          <Command>
-            <CommandInput
-              placeholder="Search product..."
-              value={query}
-              onValueChange={handleSearch} //
-            />
-            <CommandList>
-              <CommandEmpty>No results found.</CommandEmpty>
-              <CommandGroup>
-                {product.map((p) => (
-                  <CommandItem
-                    key={p.productId}
-                    data-value={p.productId}
-                    onSelect={() => {
-                      setSelectedProductId(p.productId);
-                      setOpen(false);
-                    }}
-                  >
-                    {p.productName}
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
+    <div className="flex items-center gap-x-4">
+      {/* Product Selector */}
+      <div className="flex items-center gap-x-2">
+        <p className="text-sm text-muted-foreground">Product:</p>
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <Button variant="outline" className="justify-start">
+              {selectedProduct != null
+                ? selectedProduct.title
+                : "+ Select product"}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="p-0" side="right" align="start">
+            <Command>
+              <CommandInput
+                placeholder="Search product..."
+                value={query}
+                onValueChange={handleSearch}
+              />
+              <CommandList>
+                <CommandEmpty>{query.length === 0 ? 'Type letters to find product' : 'No results found'}.</CommandEmpty>
+                <CommandGroup>
+                  {product.map((p: Product) => (
+                    <CommandItem
+                      key={p.id}
+                      data-value={p.id}
+                      onSelect={() => {
+                        setSelectedProduct(p);
+                        setOpen(false);
+                      }}
+                    >
+                      {p.title}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
+      </div>
 
-      <label>Delta: </label>
-      <input
-        type="number"
-        value={amount}
-        onChange={(e) => setAmount(e.target.value)}
-      />
+      {/* Delta Input */}
+      <div className="flex items-center gap-x-2">
+        <label className="text-sm text-muted-foreground">Delta:</label>
+        <input
+          type="number"
+          className="border rounded-md px-2 py-1 w-[80px]"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+        />
+      </div>
 
-      <Button onClick={() => handleUpdate()}>Submit</Button>
+      {/* Submit Button */}
+      <Button onClick={() => handleUpdate()} className="px-4">
+        Submit
+      </Button>
     </div>
   );
 }

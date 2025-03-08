@@ -13,7 +13,7 @@ import {
 
 export default function DeleteProduct({ productId }: { productId: number }) {
   function handleDelete() {
-    fetch(`${process.env.APP_URL}/product/${productId}`, {
+    fetch(`${process.env.NEXT_PUBLIC_APP_URL}/product/${productId}`, {
       method: "DELETE",
     }).then((res) => {
       window.location.reload();
@@ -24,7 +24,7 @@ export default function DeleteProduct({ productId }: { productId: number }) {
     <div>
       <Dialog>
         <DialogTrigger asChild>
-          <Button variant="outline">Delete</Button>
+          <Button variant="destructive">Delete</Button>
         </DialogTrigger>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
@@ -35,7 +35,7 @@ export default function DeleteProduct({ productId }: { productId: number }) {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button onClick={() => handleDelete()}>Delete</Button>
+            <Button variant="destructive" onClick={() => handleDelete()}>Delete</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

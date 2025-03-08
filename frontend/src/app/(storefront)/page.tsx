@@ -1,7 +1,6 @@
-import { Button } from "@/components/ui/button";
-import Search from "./search";
+import Filter from "./filter";
 import Items from "./items";
-import Cart from "./cart";
+import Search from "./search";
 
 type Product = {
   id: number;
@@ -34,7 +33,7 @@ export default async function Home({
     perPage: number,
     title?: string,
     category?: string,
-    lastProductId?: number | null,
+    lastProductId?: number | null
   ) {
     "use server";
 
@@ -42,7 +41,7 @@ export default async function Home({
       perPage: perPage.toString(),
       ...(title && { title }),
       ...(category && { category }),
-      ...(lastProductId != null && { lastProductId: lastProductId.toString() })
+      ...(lastProductId != null && { lastProductId: lastProductId.toString() }),
     });
     const response = await fetch(
       `${process.env.APP_URL}/products?${params.toString()}`
@@ -55,24 +54,15 @@ export default async function Home({
   const { data: items, meta } = await fetchData(10, title, category, null);
 
   return (
-    <div>
-      <div className="flex justify-between">
-        Store Page
-        <Button>
-          <a href="/admin/products">Go To Admin Page</a>
-        </Button>
-      </div>
-      <Cart />
-      <div>
-        <Search />
-        <Items
-          title={title}
-          category={category}
-          initialItems={items}
-          fetchData={fetchData}
-          meta={meta}
-        />
-      </div>
-    </div>
+    <>
+      <Search />
+      <Items
+        title={title}
+        category={category}
+        initialItems={items}
+        fetchData={fetchData}
+        meta={meta}
+      />
+    </>
   );
 }

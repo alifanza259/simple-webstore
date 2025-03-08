@@ -11,7 +11,7 @@ export default function AdminLayout({
       <body>
         <SidebarProvider>
           <AppSidebar />
-          <main>
+          <main className="ml-3 mr-3 md:w-full">
             <SidebarTrigger />
             {children}
           </main>

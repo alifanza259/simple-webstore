@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { ShoppingBag } from "lucide-react";
 
 type Product = {
   id: number;
@@ -37,5 +38,9 @@ export default function Item({ product }: { product: Product }) {
     window.location.reload();
   }
 
-  return <Button className="addToCart" onClick={() => handleBuy(product)}>Buy</Button>;
+  return (
+    <Button size="lg" className="w-full mt-5" onClick={() => handleBuy(product)}>
+      <ShoppingBag className="mr-4 h-5 w-5" /> Add to Cart
+    </Button>
+  );
 }

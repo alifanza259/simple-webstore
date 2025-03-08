@@ -31,23 +31,23 @@ export default function Search() {
   }
 
   return (
-    <div className="relative flex flex-1 flex-shrink-0">
+    <div className="flex flex-wrap items-center gap-3 mt-4">
       <input
         type="text"
         id="table-search"
-        className="block p-2 s-10 text-sm text-gray-900 border border-gray-300 rounded-lg w-60 bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+        className="p-2 text-sm text-gray-900 border border-gray-300 rounded-lg w-48 sm:w-60 bg-gray-50 focus:ring-blue-500 focus:border-blue-500"
         placeholder="Search title"
         onChange={(e) => setTitle(e.target.value)}
       />
       <input
         type="text"
         id="table-search-category"
-        className="block ml-3 p-2 s-10 text-sm text-gray-900 border border-gray-300 rounded-lg w-60 bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+        className="p-2 text-sm text-gray-900 border border-gray-300 rounded-lg w-48 sm:w-60 bg-gray-50 focus:ring-blue-500 focus:border-blue-500"
         placeholder="Category"
         onChange={(e) => setCategory(e.target.value)}
       />
       <Button
-      className="ml-3"
+        className="px-4 py-2 cursor-pointer"
         onClick={() => {
           handleSearch();
         }}

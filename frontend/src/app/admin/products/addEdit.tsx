@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -47,7 +46,7 @@ export default function AddEdit({ data }: { data?: Product }) {
   }, [data]); // Runs only when `data` changes
 
   async function handleSubmit() {
-    const url = `${process.env.APP_URL}`;
+    const url = `${process.env.NEXT_PUBLIC_APP_URL}`;
     const body = {
       title,
       category,
@@ -58,7 +57,7 @@ export default function AddEdit({ data }: { data?: Product }) {
     };
 
     if (data == null) {
-      await fetch(url+"/products", {
+      await fetch(url + "/products", {
         body: JSON.stringify(body),
         method: "POST",
         headers: {
@@ -74,7 +73,6 @@ export default function AddEdit({ data }: { data?: Product }) {
         },
       });
     }
-
 
     window.location.reload();
   }
@@ -137,6 +135,7 @@ export default function AddEdit({ data }: { data?: Product }) {
           <div className="grid grid-cols-4 items-center gap-4">
             <Label className="text-right">Stock</Label>
             <Input
+              disabled={data != null}
               id="stock"
               value={stock}
               className="col-span-3"
