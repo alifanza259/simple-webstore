@@ -18,7 +18,7 @@ function productRoutes(fastify, options, done) {
 
   fastify.post("/import-products", importProductsOpts);
   fastify.patch("/product/:id/adjust-stock", adjustStockOpts);
-  fastify.get("/stock-logs", getStockLogsOpts);
+  fastify.get("/product/stock-logs", getStockLogsOpts);
 
   done();
 }

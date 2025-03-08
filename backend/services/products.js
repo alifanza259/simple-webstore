@@ -65,4 +65,177 @@ const getProducts = async ({
   };
 };
 
-module.exports = { getProducts };
+const getProductDetail = async (id) => {
+  let query =
+    "SELECT id, title, price, description, category, image, stock FROM products WHERE id=$1";
+
+  const { rows } = await pool.query(query, [id]);
+  const product = rows[0];
+
+  if (!product) throw new Error("Product not found");
+
+  return product;
+};
+
+const createProduct = async ({
+  title,
+  price,
+  description,
+  category,
+  image,
+  stock,
+}) => {
+  const query = `INSERT INTO products (title, price, description, category, image, stock) VALUES 
+    ($1, $2, $3, $4, $5, $6) RETURNING *`;
+  const values = [title, price, description, category, image, stock];
+
+  await pool.query("BEGIN");
+
+  var result = await pool.query(query, values);
+  var newProduct = result.rows[0];
+
+  const queryInsertLog = `INSERT INTO stock_logs (product_id, activity, changes) VALUES
+    ($1, $2, $3);`;
+  await pool.query(queryInsertLog, [newProduct.id, "Insert Product", stock]);
+
+  await pool.query("COMMIT");
+
+  return newProduct;
+};
+
+const updateProduct = async (
+  id,
+  { title, price, description, category, image }
+) => {
+  const queryFind = `SELECT 1 FROM products WHERE id = $1`;
+
+  const product = (await pool.query(queryFind, [id])).rows[0];
+  if (!product) throw new Error("Product not found");
+
+  const queryUpdate = `UPDATE products 
+    SET title = $1,
+     price = $2, 
+     description = $3, 
+     category = $4, 
+     image = $5
+     WHERE id = $6`;
+  const values = [title, price, description, category, image, id];
+
+  await pool.query(queryUpdate, values);
+};
+
+const deleteProduct = async (id) => {
+  const queryFind = `SELECT id, stock FROM products WHERE id = $1`;
+
+  const product = (await pool.query(queryFind, [id])).rows[0];
+  if (!product) throw new Error("Product not found");
+
+  await pool.query("BEGIN");
+
+  const queryDelete = `DELETE FROM products WHERE id = $1`;
+
+  await pool.query(queryDelete, [id]);
+
+  const queryInsertLog = `INSERT INTO stock_logs (product_id, activity, changes) VALUES
+  ($1, $2, $3);`;
+  await pool.query(queryInsertLog, [id, "Remove Product", -product.stock]);
+
+  await pool.query("COMMIT");
+};
+
+const importProducts = async () => {
+  const url = "https://fakestoreapi.com/products";
+  const response = await fetch(url);
+  const products = await response.json();
+
+  await pool.query("BEGIN");
+
+  const values = [];
+  let placeholders = [];
+
+  for (let i = 0; i < products.length; i++) {
+    placeholders.push(
+      `($${i * 6 + 1}, $${i * 6 + 2}, $${i * 6 + 3}, $${i * 6 + 4}, $${
+        i * 6 + 5
+      }, $${i * 6 + 6})`
+    );
+
+    const p = products[i];
+    values.push(p.id, p.title, p.price, p.category, p.description, p.image);
+  }
+
+  placeholders = placeholders.join(",");
+
+  const query = `
+    INSERT INTO products (id, title, price, category, description, image)
+    VALUES ${placeholders}
+    ON CONFLICT (id) DO NOTHING
+    RETURNING *;
+  `;
+
+  const result = await pool.query(query, values);
+
+  const insertedIds = result.rows.map((e) => e.id);
+  if (insertedIds.length === 0) return;
+
+  const valuesInsertLogs = [];
+  let placeholdersInsertLogs = [];
+
+  for (let i = 0; i < insertedIds.length; i++) {
+    placeholdersInsertLogs.push(
+      `($${i * 3 + 1}, $${i * 3 + 2}, $${i * 3 + 3})`
+    );
+
+    valuesInsertLogs.push(insertedIds[i], "Insert Product", 0);
+  }
+
+  placeholdersInsertLogs = placeholdersInsertLogs.join(",");
+
+  const queryInsertLog = `INSERT INTO stock_logs (product_id, activity, changes) VALUES
+  ${placeholdersInsertLogs}`;
+  await pool.query(queryInsertLog, valuesInsertLogs);
+
+  await pool.query("COMMIT");
+};
+
+const adjustStock = async (adjustStockAmount, id) => {
+  await pool.query("BEGIN");
+
+  const queryFind = "SELECT id, stock FROM products WHERE id = $1 FOR UPDATE;";
+  const product = await pool.query(queryFind, [id]);
+  if (product.rowCount === 0) {
+    await pool.query("ROLLBACK");
+    throw new Error("Product not found");
+  }
+
+  const queryUpdate = `UPDATE products SET stock = stock + $1 WHERE id = $2;`;
+  await pool.query(queryUpdate, [adjustStockAmount, id]);
+
+  const queryInsertLog = `INSERT INTO stock_logs (product_id, activity, changes) VALUES
+  ($1, $2, $3);`;
+  await pool.query(queryInsertLog, [id, "Update Stock", adjustStockAmount]);
+
+  await pool.query("COMMIT");
+};
+
+const getStockLogs = async () => {
+  const query = `SELECT sl.id as "logId", p.id as "productId", p.title as "productName", activity, changes, transaction_date as "transactionDate" 
+  FROM stock_logs sl
+  JOIN products p ON p.id = sl.product_id
+  ORDER BY transaction_date DESC;`;
+
+  const { rows: stockLogs } = await pool.query(query);
+
+  return stockLogs;
+};
+
+module.exports = {
+  getProducts,
+  getProductDetail,
+  createProduct,
+  updateProduct,
+  deleteProduct,
+  importProducts,
+  adjustStock,
+  getStockLogs,
+};

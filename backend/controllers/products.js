@@ -1,56 +1,74 @@
-const { pool } = require("../database");
-const { getProducts } = require("../services/products");
+const { postAnalytics } = require("../services/analytics");
+const {
+  getProducts,
+  getProductDetail,
+  createProduct,
+  updateProduct,
+  deleteProduct,
+  importProducts,
+  getStockLogs,
+  adjustStock,
+} = require("../services/products");
 
 const getProductsController = async (req, reply) => {
   const { page = 1, perPage, title, category, lastProductId } = req.query;
-  const { products, meta } = await getProducts({
-    page,
-    perPage,
-    title,
-    category,
-    lastProductId,
-  });
 
-  return reply.send({
-    data: products,
-    meta,
-  });
+  try {
+    const { products, meta } = await getProducts({
+      page,
+      perPage,
+      title,
+      category,
+      lastProductId,
+    });
+
+    return reply.send({
+      data: products,
+      meta,
+    });
+  } catch (error) {
+    return reply.code(500).send({
+      message: error.message,
+    });
+  }
 };
 
-const getProductDetail = async (req, reply) => {
+const getProductDetailController = async (req, reply) => {
   const id = req.params.id;
 
-  let query =
-    "SELECT id, title, price, description, category, image, stock FROM products WHERE id=$1";
+  try {
+    const product = await getProductDetail(id);
 
-  const result = await pool.query(query, [id]);
-  const product = result.rows[0];
+    return reply.send({
+      data: product,
+    });
+  } catch (error) {
+    if (error.message === "Product not found") {
+      return reply.code(404).send({
+        message: error.message,
+      });
+    }
 
-  return reply.send({
-    data: product,
-  });
+    return reply.code(500).send({
+      message: error.message,
+    });
+  }
 };
 
-const createProduct = async (req, reply) => {
+const createProductController = async (req, reply) => {
   const { title, price, description, category, image, stock = 0 } = req.body;
 
-  const query = `INSERT INTO products (title, price, description, category, image, stock) VALUES 
-    ($1, $2, $3, $4, $5, $6) RETURNING *`;
-  const values = [title, price, description, category, image, stock];
+  try {
+    const newProduct = await createProduct({
+      title,
+      price,
+      description,
+      category,
+      image,
+      stock,
+    });
 
-  await pool.query("BEGIN");
-
-  var result = await pool.query(query, values);
-  var newProduct = result.rows[0];
-
-  const queryInsertLog = `INSERT INTO stock_logs (product_id, activity, changes) VALUES
-    ($1, $2, $3);`;
-  await pool.query(queryInsertLog, [newProduct.id, "Insert Product", stock]);
-
-  await pool.query("COMMIT");
-  const data = JSON.stringify({
-    client_id: "simple-webstore-backend",
-    events: [
+    postAnalytics([
       {
         name: "admin_actions",
         params: {
@@ -58,47 +76,24 @@ const createProduct = async (req, reply) => {
           event_source: "backend",
         },
       },
-    ],
-  });
+    ]);
 
-  fetch(
-    `https://www.google-analytics.com/mp/collect?measurement_id=${process.env.GA_MEASUREMENT_ID}&api_secret=${process.env.GA_API_SECRET}`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Content-Length": data.length,
-      },
-      body: data,
-    }
-  );
-
-  return reply.code(201).send({ data: newProduct });
+    return reply.code(201).send({ data: newProduct });
+  } catch (error) {
+    return reply.code(500).send({
+      message: error.message,
+    });
+  }
 };
 
-const updateProduct = async (req, reply) => {
+const updateProductController = async (req, reply) => {
   const id = req.params.id;
   const { title, price, description, category, image } = req.body;
 
-  const queryFind = `SELECT 1 FROM products WHERE id = $1`;
+  try {
+    await updateProduct(id, { title, price, description, category, image });
 
-  const product = (await pool.query(queryFind, [id])).rows[0];
-  if (!product) return reply.code(404).send({ data: "product not found" });
-
-  const queryUpdate = `UPDATE products 
-    SET title = $1,
-     price = $2, 
-     description = $3, 
-     category = $4, 
-     image = $5,
-     WHERE id = $6`;
-  const values = [title, price, description, category, image, id];
-
-  await pool.query(queryUpdate, values);
-
-  const data = JSON.stringify({
-    client_id: "simple-webstore-backend",
-    events: [
+    postAnalytics([
       {
         name: "admin_actions",
         params: {
@@ -106,46 +101,28 @@ const updateProduct = async (req, reply) => {
           event_source: "backend",
         },
       },
-    ],
-  });
-
-  fetch(
-    `https://www.google-analytics.com/mp/collect?measurement_id=${process.env.GA_MEASUREMENT_ID}&api_secret=${process.env.GA_API_SECRET}`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Content-Length": data.length,
-      },
-      body: data,
+    ]);
+  } catch (error) {
+    if (error.message === "Product not found") {
+      return reply.code(404).send({
+        message: error.message,
+      });
     }
-  );
+
+    return reply.code(500).send({
+      message: error.message,
+    });
+  }
 
   return reply.send({ data: req.body });
 };
 
-const deleteProduct = async (req, reply) => {
+const deleteProductController = async (req, reply) => {
   const id = req.params.id;
-  const queryFind = `SELECT id, stock FROM products WHERE id = $1`;
 
-  const product = (await pool.query(queryFind, [id])).rows[0];
-  if (!product) return reply.code(404).send({ data: "product not found" });
-
-  await pool.query("BEGIN");
-
-  const queryDelete = `DELETE FROM products WHERE id = $1`;
-
-  await pool.query(queryDelete, [id]);
-
-  const queryInsertLog = `INSERT INTO stock_logs (product_id, activity, changes) VALUES
-  ($1, $2, $3);`;
-  await pool.query(queryInsertLog, [id, "Remove Product", -product.stock]);
-
-  await pool.query("COMMIT");
-
-  const data = JSON.stringify({
-    client_id: "simple-webstore-backend",
-    events: [
+  try {
+    await deleteProduct(id);
+    postAnalytics([
       {
         name: "admin_actions",
         params: {
@@ -153,142 +130,78 @@ const deleteProduct = async (req, reply) => {
           event_source: "backend",
         },
       },
-    ],
-  });
+    ]);
 
-  fetch(
-    `https://www.google-analytics.com/mp/collect?measurement_id=${process.env.GA_MEASUREMENT_ID}&api_secret=${process.env.GA_API_SECRET}`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Content-Length": data.length,
-      },
-      body: data,
+    return reply.code(204).send();
+  } catch (error) {
+    if (error.message === "Product not found") {
+      return reply.code(404).send({
+        message: error.message,
+      });
     }
-  );
 
-  return reply.code(204).send();
+    return reply.code(500).send({
+      message: error.message,
+    });
+  }
 };
 
-const importProducts = async (req, reply) => {
-  const url = "https://fakestoreapi.com/products";
-  const response = await fetch(url);
-  const products = await response.json();
+const importProductsController = async (req, reply) => {
+  try {
+    await importProducts();
 
-  await pool.query("BEGIN");
-
-  const values = [];
-  let placeholders = [];
-
-  for (let i = 0; i < products.length; i++) {
-    placeholders.push(
-      `($${i * 6 + 1}, $${i * 6 + 2}, $${i * 6 + 3}, $${i * 6 + 4}, $${
-        i * 6 + 5
-      }, $${i * 6 + 6})`
-    );
-
-    const p = products[i];
-    values.push(p.id, p.title, p.price, p.category, p.description, p.image);
+    return reply.send({ data: "import success" });
+  } catch (error) {
+    return reply.code(500).send({
+      message: error.message,
+    });
   }
-
-  placeholders = placeholders.join(",");
-
-  const query = `
-    INSERT INTO products (id, title, price, category, description, image)
-    VALUES ${placeholders}
-    ON CONFLICT (id) DO NOTHING
-    RETURNING *;
-  `;
-
-  const result = await pool.query(query, values);
-
-  const insertedIds = result.rows.map((e) => e.id);
-
-  const valuesInsertLogs = [];
-  let placeholdersInsertLogs = [];
-
-  for (let i = 0; i < insertedIds.length; i++) {
-    placeholdersInsertLogs.push(
-      `($${i * 3 + 1}, $${i * 3 + 2}, $${i * 3 + 3})`
-    );
-
-    valuesInsertLogs.push(insertedIds[i], "Insert Product", 0);
-  }
-
-  placeholdersInsertLogs = placeholdersInsertLogs.join(",");
-
-  const queryInsertLog = `INSERT INTO stock_logs (product_id, activity, changes) VALUES
-  ${placeholdersInsertLogs};`;
-  await pool.query(queryInsertLog, valuesInsertLogs);
-
-  await pool.query("COMMIT");
-
-  return reply.send({ data: "import success" });
 };
 
-const adjustStock = async (req, reply) => {
+const adjustStockController = async (req, reply) => {
   const adjustStockAmount = req.body.amount;
   const id = req.params.id;
 
-  await pool.query("BEGIN");
+  try {
+    await adjustStock(adjustStockAmount, id);
 
-  const queryFind = "SELECT id, stock FROM products WHERE id = $1 FOR UPDATE;";
-  const product = await pool.query(queryFind, [id]);
-  if (product.rowCount === 0) {
-    await pool.query("ROLLBACK");
-    return reply.code(404).send({ data: "product not found" });
-  }
-
-  const queryUpdate = `UPDATE products SET stock = stock + $1 WHERE id = $2;`;
-  await pool.query(queryUpdate, [adjustStockAmount, id]);
-
-  const queryInsertLog = `INSERT INTO stock_logs (product_id, activity, changes) VALUES
-  ($1, $2, $3);`;
-  await pool.query(queryInsertLog, [id, "Update Stock", adjustStockAmount]);
-
-  await pool.query("COMMIT");
-
-  const data = JSON.stringify({
-    client_id: "simple-webstore-backend",
-    events: [
+    postAnalytics([
       {
         name: "stock_adjustment",
         params: {
           event_source: "backend",
         },
       },
-    ],
-  });
+    ]);
 
-  fetch(
-    `https://www.google-analytics.com/mp/collect?measurement_id=${process.env.GA_MEASUREMENT_ID}&api_secret=${process.env.GA_API_SECRET}`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Content-Length": data.length,
-      },
-      body: data,
+    return reply.send({
+      data: "adjust stock success",
+    });
+  } catch (error) {
+    if (error.message === "Product not found") {
+      return reply.code(404).send({
+        message: error.message,
+      });
     }
-  );
 
-  return reply.send({
-    data: "adjust stock success",
-  });
+    return reply.code(500).send({
+      message: error.message,
+    });
+  }
 };
 
-const getStockLogs = async (req, reply) => {
-  const query = `SELECT sl.id as "logId", p.id as "productId", p.title as "productName", activity, changes, transaction_date as "transactionDate" 
-      FROM stock_logs sl
-      JOIN products p ON p.id = sl.product_id
-      ORDER BY transaction_date DESC;`;
-  const result = await pool.query(query);
-  const stockLogs = result.rows;
+const getStockLogsController = async (req, reply) => {
+  try {
+    const stockLogs = await getStockLogs();
 
-  return reply.send({
-    data: stockLogs,
-  });
+    return reply.send({
+      data: stockLogs,
+    });
+  } catch (error) {
+    return reply.code(500).send({
+      message: error.message,
+    });
+  }
 };
 
 const Product = {
@@ -346,7 +259,7 @@ const createProductOpts = {
       },
     },
   },
-  handler: createProduct,
+  handler: createProductController,
 };
 
 const updateProductOpts = {
@@ -366,12 +279,12 @@ const updateProductOpts = {
       404: {
         type: "object",
         properties: {
-          data: { type: "string" },
+          message: { type: "string" },
         },
       },
     },
   },
-  handler: updateProduct,
+  handler: updateProductController,
 };
 
 const deleteProductOpts = {
@@ -381,12 +294,12 @@ const deleteProductOpts = {
       404: {
         type: "object",
         properties: {
-          data: { type: "string" },
+          message: { type: "string" },
         },
       },
     },
   },
-  handler: deleteProduct,
+  handler: deleteProductController,
 };
 
 const importProductsOpts = {
@@ -400,7 +313,7 @@ const importProductsOpts = {
       },
     },
   },
-  handler: importProducts,
+  handler: importProductsController,
 };
 
 const adjustStockOpts = {
@@ -417,12 +330,12 @@ const adjustStockOpts = {
       404: {
         type: "object",
         properties: {
-          data: { type: "string" },
+          message: { type: "string" },
         },
       },
     },
   },
-  handler: adjustStock,
+  handler: adjustStockController,
 };
 
 const getStockLogsOpts = {
@@ -450,7 +363,7 @@ const getStockLogsOpts = {
       },
     },
   },
-  handler: getStockLogs,
+  handler: getStockLogsController,
 };
 
 const getProductDetailOpts = {
@@ -464,7 +377,7 @@ const getProductDetailOpts = {
       },
     },
   },
-  handler: getProductDetail,
+  handler: getProductDetailController,
 };
 
 module.exports = {
