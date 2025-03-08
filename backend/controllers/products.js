@@ -80,6 +80,30 @@ const createProduct = async (req, reply) => {
   await pool.query(queryInsertLog, [newProduct.id, "Insert Product", stock]);
 
   await pool.query("COMMIT");
+  const data = JSON.stringify({
+    client_id: "simple-webstore-backend",
+    events: [
+      {
+        name: "admin_actions",
+        params: {
+          action: "product_creation",
+          event_source: "backend",
+        },
+      },
+    ],
+  });
+
+  fetch(
+    `https://www.google-analytics.com/mp/collect?measurement_id=${process.env.GA_MEASUREMENT_ID}&api_secret=${process.env.GA_API_SECRET}`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Content-Length": data.length,
+      },
+      body: data,
+    }
+  );
 
   return reply.code(201).send({ data: newProduct });
 };
@@ -104,6 +128,31 @@ const updateProduct = async (req, reply) => {
 
   await pool.query(queryUpdate, values);
 
+  const data = JSON.stringify({
+    client_id: "simple-webstore-backend",
+    events: [
+      {
+        name: "admin_actions",
+        params: {
+          action: "product_update",
+          event_source: "backend",
+        },
+      },
+    ],
+  });
+
+  fetch(
+    `https://www.google-analytics.com/mp/collect?measurement_id=${process.env.GA_MEASUREMENT_ID}&api_secret=${process.env.GA_API_SECRET}`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Content-Length": data.length,
+      },
+      body: data,
+    }
+  );
+
   return reply.send({ data: req.body });
 };
 
@@ -125,6 +174,31 @@ const deleteProduct = async (req, reply) => {
   await pool.query(queryInsertLog, [id, "Remove Product", -product.stock]);
 
   await pool.query("COMMIT");
+
+  const data = JSON.stringify({
+    client_id: "simple-webstore-backend",
+    events: [
+      {
+        name: "admin_actions",
+        params: {
+          action: "product_deletion",
+          event_source: "backend",
+        },
+      },
+    ],
+  });
+
+  fetch(
+    `https://www.google-analytics.com/mp/collect?measurement_id=${process.env.GA_MEASUREMENT_ID}&api_secret=${process.env.GA_API_SECRET}`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Content-Length": data.length,
+      },
+      body: data,
+    }
+  );
 
   return reply.code(204).send();
 };
@@ -206,6 +280,30 @@ const adjustStock = async (req, reply) => {
   await pool.query(queryInsertLog, [id, "Update Stock", adjustStockAmount]);
 
   await pool.query("COMMIT");
+
+  const data = JSON.stringify({
+    client_id: "simple-webstore-backend",
+    events: [
+      {
+        name: "stock_adjustment",
+        params: {
+          event_source: "backend",
+        },
+      },
+    ],
+  });
+
+  fetch(
+    `https://www.google-analytics.com/mp/collect?measurement_id=${process.env.GA_MEASUREMENT_ID}&api_secret=${process.env.GA_API_SECRET}`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Content-Length": data.length,
+      },
+      body: data,
+    }
+  );
 
   return reply.send({
     data: "adjust stock success",
@@ -409,5 +507,5 @@ module.exports = {
   importProductsOpts,
   adjustStockOpts,
   getStockLogsOpts,
-  getProductDetailOpts
+  getProductDetailOpts,
 };
