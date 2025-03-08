@@ -183,6 +183,11 @@ const adjustStockController = async (req, reply) => {
         message: error.message,
       });
     }
+    if (error.message === "Product out of stock") {
+      return reply.code(400).send({
+        message: error.message,
+      });
+    }
 
     return reply.code(500).send({
       message: error.message,

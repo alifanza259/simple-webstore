@@ -208,6 +208,9 @@ const adjustStock = async (adjustStockAmount, id) => {
     throw new Error("Product not found");
   }
 
+  if (product.rows[0].stock + adjustStockAmount < 0)
+    throw new Error("Product out of stock");
+
   const queryUpdate = `UPDATE products SET stock = stock + $1 WHERE id = $2;`;
   await pool.query(queryUpdate, [adjustStockAmount, id]);
 
