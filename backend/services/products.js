@@ -33,7 +33,7 @@ const getProducts = async ({
     index++;
   }
 
-  countQuery += ` AND deleted_at IS NULL`
+  countQuery += ` AND deleted_at IS NULL`;
   const { rows: countResult } = await pool.query(countQuery, values);
   const totalItems = parseInt(countResult[0].count);
 
@@ -195,6 +195,14 @@ const importProducts = async () => {
   const queryInsertLog = `INSERT INTO stock_logs (product_id, activity, changes) VALUES
   ${placeholdersInsertLogs}`;
   await pool.query(queryInsertLog, valuesInsertLogs);
+
+  await pool.query(`
+    SELECT setval(
+      'products_id_seq',
+      COALESCE((SELECT MAX(id) FROM products), 1),
+      true
+    )
+  `);
 
   await pool.query("COMMIT");
 };
