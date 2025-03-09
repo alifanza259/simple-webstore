@@ -9,7 +9,8 @@
   "scripts": {
     "start": "node server.js",
     "test": "jest",
-    "coverage": "jest --collectCoverageFrom=**/services/**/*.js --coverage"
+    "coverage": "jest --collectCoverageFrom=**/services/**/*.js --coverage",
+    "migrate": "knex migrate:latest"
   },
   "name": "simple-webstore",
   "version": "1.0.0",
