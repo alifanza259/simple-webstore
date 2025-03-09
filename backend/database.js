@@ -3,11 +3,11 @@ const { Pool } = pg;
 require('dotenv').config()
 
 const pool = new Pool({
-  user: "postgres",
+  user: process.env.DB_USER,
   password: process.env.DB_PASS,
   host: process.env.DB_HOST,
   port: process.env.DB_PORT,
-  database: "postgres",
+  database: process.env.DB_NAME,
 });
 
 function validateDbConnection() {
