@@ -30,9 +30,9 @@ export default function Item({ product }: { product: Product }) {
   const router = useRouter();
 
   function handleBuy(p: Product) {
-    let userCartString = localStorage.getItem("carts");
+    const userCartString = localStorage.getItem("carts");
 
-    let userCart = userCartString == null ? [] : JSON.parse(userCartString);
+    const userCart = userCartString == null ? [] : JSON.parse(userCartString);
 
     const i = userCart.findIndex((e: CartItem) => e.productId === p.id);
 

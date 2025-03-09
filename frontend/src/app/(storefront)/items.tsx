@@ -30,6 +30,14 @@ type Meta = {
   totalPages: number;
 };
 
+type CartItem = {
+  productId: number;
+  productName: string;
+  price: number;
+  image: string;
+  amount: number;
+};
+
 export default function Items({
   title,
   category,
@@ -40,7 +48,12 @@ export default function Items({
   title: string;
   category: string;
   initialItems: Product[];
-  fetchData: any;
+  fetchData: (
+    perPage: number,
+    title?: string,
+    category?: string,
+    lastProductId?: number | null
+  ) => Promise<{ data: Product[]; meta: Meta }>;
   meta: Meta;
 }) {
   const [loading, setLoading] = useState(false);
@@ -65,11 +78,11 @@ export default function Items({
   };
 
   function handleBuy(p: Product) {
-    let userCartString = localStorage.getItem("carts");
+    const userCartString = localStorage.getItem("carts");
 
-    let userCart = userCartString == null ? [] : JSON.parse(userCartString);
+    const userCart = userCartString == null ? [] : JSON.parse(userCartString);
 
-    const i = userCart.findIndex((e: any) => e.productId === p.id);
+    const i = userCart.findIndex((e: CartItem) => e.productId === p.id);
 
     if (i !== -1) {
       userCart[i].amount += 1;

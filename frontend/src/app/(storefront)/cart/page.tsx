@@ -20,11 +20,13 @@ type CartItem = {
   amount: number;
 };
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 declare global {
   interface Window {
     dataLayer: any[];
   }
 }
+/* eslint-enable @typescript-eslint/no-explicit-any */
 
 export default function Checkout() {
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -35,7 +37,7 @@ export default function Checkout() {
   const { refreshCart } = useCart();
 
   useEffect(() => {
-    let cartString = localStorage.getItem("carts");
+    const cartString = localStorage.getItem("carts");
 
     if (cartString) {
       const cart = JSON.parse(cartString) as CartItem[];
@@ -101,12 +103,6 @@ export default function Checkout() {
     const cartString = localStorage.getItem("carts");
     if (cartString) {
       const cart = JSON.parse(cartString) as CartItem[];
-
-      let totalPrice = 0;
-
-      for (let obj in cart) {
-        totalPrice += cart[obj].amount * cart[obj].price;
-      }
 
       setCheckoutSuccess(true);
 

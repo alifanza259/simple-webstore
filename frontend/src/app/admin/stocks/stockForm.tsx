@@ -78,8 +78,18 @@ export default function Search() {
       setSelectedProduct(undefined);
 
       setTimeout(() => router.refresh(), 500);
-    } catch (error: any) {
-      toast.error(`Error: ${error.message || "Something went wrong"}`, {
+    } catch (error: unknown) {
+      let errorMessage = "Something went wrong";
+
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === "string") {
+        errorMessage = error;
+      } else {
+        errorMessage = JSON.stringify(error);
+      }
+
+      toast.error(`Something went wrong: ${errorMessage}`, {
         style: { backgroundColor: "red", color: "white" },
       });
     } finally {
