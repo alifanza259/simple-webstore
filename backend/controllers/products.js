@@ -162,6 +162,12 @@ const adjustStockController = async (req, reply) => {
   const adjustStockAmount = req.body.amount;
   const id = req.params.id;
 
+  if (adjustStockAmount === 0) {
+    return reply.code(400).send({
+      message: "amount can not be 0",
+    });
+  }
+
   try {
     await adjustStock(adjustStockAmount, id);
 
@@ -212,7 +218,7 @@ const getStockLogsController = async (req, reply) => {
 const Product = {
   id: { type: "integer" },
   title: { type: "string" },
-  price: { type: "integer", minimum: 1 },
+  price: { type: "number", minimum: 0.01 },
   description: { type: "string" },
   category: { type: "string" },
   image: { type: "string" },

@@ -26,6 +26,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import Link from "next/link";
 
 export default async function AdminProduct({
   searchParams,
@@ -105,7 +106,11 @@ export default async function AdminProduct({
                       {d.title}
                     </th>
                     <td className="px-6 py-4">
-                      <img src={d.image}></img>{" "}
+                      <img
+                        src={d.image}
+                        className="w-[100px] h-[100px] object-contain rounded-md"
+                        alt={d.title}
+                      />
                     </td>
                     <td className="overflow-hidden text-ellipsis px-6 py-4">
                       {d.description}
@@ -131,24 +136,30 @@ export default async function AdminProduct({
               {meta.totalItems} entries
             </div>
             <div className="ml-auto flex space-x-2">
-              <Button disabled={parseInt(page) === 1}>
-                <a
-                  href={`/admin/products?title=${title}&category=${category}&page=${
-                    parseInt(page) - 1
-                  }&perPage=${perPage}`}
+              <Link
+                href={`/admin/products?title=${title}&category=${category}&page=${
+                  parseInt(page) - 1
+                }&perPage=${perPage}`}
+              >
+                <Button
+                  disabled={parseInt(page) === 1}
+                  className="cursor-pointer"
                 >
                   Previous
-                </a>
-              </Button>
-              <Button disabled={parseInt(page) >= meta.totalPages}>
-                <a
-                  href={`/admin/products?title=${title}&category=${category}&page=${
-                    parseInt(page) + 1
-                  }&perPage=${perPage}`}
+                </Button>
+              </Link>
+              <Link
+                href={`/admin/products?title=${title}&category=${category}&page=${
+                  parseInt(page) + 1
+                }&perPage=${perPage}`}
+              >
+                <Button
+                  disabled={parseInt(page) >= meta.totalPages}
+                  className="cursor-pointer"
                 >
                   Next
-                </a>
-              </Button>
+                </Button>
+              </Link>
             </div>
           </div>
         </CardFooter>

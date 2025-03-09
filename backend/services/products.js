@@ -33,23 +33,24 @@ const getProducts = async ({
     index++;
   }
 
+  countQuery += ` AND deleted_at IS NULL`
   const { rows: countResult } = await pool.query(countQuery, values);
   const totalItems = parseInt(countResult[0].count);
 
   let totalPages;
   if (perPage) {
     if (lastProductId) {
-      selectQuery += ` AND id < $${index} ORDER BY id DESC LIMIT $${index + 1}`;
+      selectQuery += ` AND id < $${index} AND deleted_at IS NULL ORDER BY id DESC LIMIT $${index + 1}`;
       values.push(lastProductId, perPage);
     } else {
       const offset = (page - 1) * perPage;
       totalPages = Math.ceil(totalItems / perPage);
 
-      selectQuery += ` ORDER BY id DESC LIMIT $${index} OFFSET $${index + 1}`;
+      selectQuery += ` AND deleted_at IS NULL ORDER BY id DESC LIMIT $${index} OFFSET $${index + 1}`;
       values.push(perPage, offset);
     }
   } else {
-    selectQuery += ` ORDER BY id DESC`;
+    selectQuery += ` AND deleted_at IS NULL ORDER BY id DESC`;
   }
 
   const { rows: products } = await pool.query(selectQuery, values);
@@ -67,7 +68,7 @@ const getProducts = async ({
 
 const getProductDetail = async (id) => {
   let query =
-    "SELECT id, title, price, description, category, image, stock FROM products WHERE id=$1";
+    "SELECT id, title, price, description, category, image, stock FROM products WHERE id=$1 AND deleted_at IS NULL";
 
   const { rows } = await pool.query(query, [id]);
   const product = rows[0];
@@ -118,21 +119,21 @@ const updateProduct = async (
      description = $3, 
      category = $4, 
      image = $5
-     WHERE id = $6`;
+     WHERE id = $6 AND deleted_at IS NULL`;
   const values = [title, price, description, category, image, id];
 
   await pool.query(queryUpdate, values);
 };
 
 const deleteProduct = async (id) => {
-  const queryFind = `SELECT id, stock FROM products WHERE id = $1`;
+  const queryFind = `SELECT id, stock FROM products WHERE id = $1 AND deleted_at IS NULL`;
 
   const product = (await pool.query(queryFind, [id])).rows[0];
   if (!product) throw new Error("Product not found");
 
   await pool.query("BEGIN");
 
-  const queryDelete = `DELETE FROM products WHERE id = $1`;
+  const queryDelete = `UPDATE products SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1`;
 
   await pool.query(queryDelete, [id]);
 
@@ -201,7 +202,7 @@ const importProducts = async () => {
 const adjustStock = async (adjustStockAmount, id) => {
   await pool.query("BEGIN");
 
-  const queryFind = "SELECT id, stock FROM products WHERE id = $1 FOR UPDATE;";
+  const queryFind = "SELECT id, stock FROM products WHERE id = $1 AND deleted_at IS NULL FOR UPDATE;";
   const product = await pool.query(queryFind, [id]);
   if (product.rowCount === 0) {
     await pool.query("ROLLBACK");

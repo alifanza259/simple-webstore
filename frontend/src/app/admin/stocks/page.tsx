@@ -54,7 +54,7 @@ export default async function AdminStocks() {
                 >
                   <td className="px-6 py-4">{l.productName}</td>
                   <td className="px-6 py-4">{l.activity}</td>
-                  <td className="px-6 py-4">{l.changes}</td>
+                  <td className="px-6 py-4">{l.changes > 0 ? `+${l.changes}` : l.changes}</td>
                   <td className="px-6 py-4">{l.transactionDate}</td>
                 </tr>
               ))}

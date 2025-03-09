@@ -1,21 +1,47 @@
 "use client";
 
+import { useCart } from "@/app/context/CartContext";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Package, Trash } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+type CartItem = {
+  productId: number;
+  productName: string;
+  price: number;
+  image: string;
+  amount: number;
+};
+
+declare global {
+  interface Window {
+    dataLayer: any[];
+  }
+}
+
 export default function Checkout() {
-  const [cart, setCart] = useState([]);
+  const [cart, setCart] = useState<CartItem[]>([]);
   const [totalPrice, setTotalPrice] = useState(0);
+  const [checkoutSuccess, setCheckoutSuccess] = useState(false);
+
+  const router = useRouter();
+  const { refreshCart } = useCart();
 
   useEffect(() => {
-    let cart = localStorage.getItem("carts");
+    let cartString = localStorage.getItem("carts");
 
-    if (cart) {
-      cart = JSON.parse(cart);
+    if (cartString) {
+      const cart = JSON.parse(cartString) as CartItem[];
 
       let price = 0;
-      cart.forEach((c) => {
+      cart.forEach((c: CartItem) => {
         price += c.price * c.amount;
       });
 
@@ -25,9 +51,11 @@ export default function Checkout() {
   }, []);
 
   function updateAmount(index: number, newAmount: number) {
-    let cart = localStorage.getItem("carts");
+    const cartString = localStorage.getItem("carts");
 
-    cart = JSON.parse(cart);
+    if (!cartString) return;
+
+    const cart = JSON.parse(cartString) as CartItem[];
 
     cart[index].amount = newAmount;
     setCart(cart);
@@ -44,9 +72,9 @@ export default function Checkout() {
   }
 
   function handleRemoveItem(productId: number) {
-    let cart = localStorage.getItem("carts");
-    if (cart) {
-      cart = JSON.parse(cart);
+    const cartString = localStorage.getItem("carts");
+    if (cartString) {
+      const cart = JSON.parse(cartString) as CartItem[];
 
       const i = cart.findIndex((e) => e.productId === productId);
       if (i !== -1) {
@@ -55,14 +83,24 @@ export default function Checkout() {
         localStorage.setItem("carts", JSON.stringify(cart));
       }
 
-      window.location.reload();
+      let price = 0;
+
+      cart.forEach((c) => {
+        price += c.price * c.amount;
+      });
+
+      setTotalPrice(price);
+
+      refreshCart();
+      setCart(cart);
+      router.refresh();
     }
   }
 
   function handleCheckout() {
-    let cart = localStorage.getItem("carts");
-    if (cart) {
-      cart = JSON.parse(cart);
+    const cartString = localStorage.getItem("carts");
+    if (cartString) {
+      const cart = JSON.parse(cartString) as CartItem[];
 
       let totalPrice = 0;
 
@@ -70,8 +108,7 @@ export default function Checkout() {
         totalPrice += cart[obj].amount * cart[obj].price;
       }
 
-      alert(`Total Price: ${totalPrice}`);
-      alert(`Thank you for shopping with us`);
+      setCheckoutSuccess(true);
 
       window.dataLayer = window.dataLayer || [];
       window.dataLayer.push({
@@ -79,8 +116,12 @@ export default function Checkout() {
       });
 
       localStorage.removeItem("carts");
-      window.location.replace("/");
+      refreshCart();
     }
+  }
+
+  function closeModal() {
+    router.push("/");
   }
 
   return (
@@ -95,7 +136,7 @@ export default function Checkout() {
           {cart.map((c, i) => (
             <div key={c.productId} className="flex pb-6 ">
               <div className="w-24 h-24 sm:w-32 sm:h-32">
-                <img src={c.image} className="h-full object-cover" />
+                <img src={c.image} className="h-full object-contain" />
               </div>
               <div className="ml-5 flex justify-between w-full font-medium">
                 <p className="w-2/3">{c.productName}</p>
@@ -113,7 +154,9 @@ export default function Checkout() {
                       className="border rounded-md ml-3 px-2 py-1 w-[80px]"
                       min={1}
                       value={c.amount}
-                      onChange={(e) => updateAmount(i, e.target.value)}
+                      onChange={(e) =>
+                        updateAmount(i, parseInt(e.target.value))
+                      }
                     />
                   </div>
                 </div>
@@ -134,40 +177,19 @@ export default function Checkout() {
               Checkout
             </Button>
           </div>
+          <Dialog open={checkoutSuccess} onOpenChange={setCheckoutSuccess}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Checkout Successful</DialogTitle>
+              </DialogHeader>
+              <p>Thank you for shopping with us!</p>
+              <Button className="mt-4 w-full" onClick={closeModal}>
+                OK
+              </Button>
+            </DialogContent>
+          </Dialog>
         </div>
       )}
-      {/* <div>Cart</div>
-      <ol>
-        {cart.map((p: Product) => (
-          <ul>
-            <div className="max-w-sm rounded overflow-hidden shadow-lg">
-              <img
-                src={p.image}
-                alt="Sunset in the mountains"
-                width={100}
-                height={100}
-              />
-              <div className="px-6 py-4">
-                <div className="font-bold text-xl mb-2">{p.productName}</div>
-              </div>
-              <div className="px-6 py-4">
-                <div className="text-xl mb-2">Price Name: {p.price}</div>
-              </div>
-              <div className="px-6 py-4">
-                <div className="text-xl mb-2">Amount: {p.amount}</div>
-              </div>
-              <Button onClick={() => handleRemoveItem(p.productId)}>
-                Remove from cart
-              </Button>
-            </div>
-            <br />
-          </ul>
-        ))}
-      </ol>
-      <div>Total Price: {totalPrice}</div>
-      <div>
-        <Button onClick={() => handleCheckout()}>Buy Now</Button>
-      </div> */}
     </div>
   );
 }

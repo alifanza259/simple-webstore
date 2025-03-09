@@ -1,4 +1,3 @@
-import Filter from "./filter";
 import Items from "./items";
 import Search from "./search";
 

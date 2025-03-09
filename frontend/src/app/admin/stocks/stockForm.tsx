@@ -14,7 +14,9 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { toast } from "sonner";
 
 type Product = {
   id: number;
@@ -32,8 +34,13 @@ export default function Search() {
   const [query, setQuery] = useState("");
   const [selectedProduct, setSelectedProduct] = useState<Product>();
   const [amount, setAmount] = useState(0);
+  const [loadingSearch, setLoadingSearch] = useState(false);
+  const [loadingSubmit, setLoadingSubmit] = useState(false);
+
+  const router = useRouter();
 
   const handleSearch = async (term: string) => {
+    setLoadingSearch(true);
     setQuery(term);
 
     const response = await fetch(
@@ -42,30 +49,46 @@ export default function Search() {
     const products = await response.json();
 
     setProduct(products.data);
+    setLoadingSearch(false);
   };
 
   const handleUpdate = async () => {
-    if (selectedProduct == null) return;
+    if (!selectedProduct) return;
+    setLoadingSubmit(true);
 
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_APP_URL}/product/${selectedProduct.id}/adjust-stock`,
-      {
-        method: "PATCH",
-        body: JSON.stringify({
-          amount,
-        }),
-        headers: {
-          "content-type": "application/json",
-        },
-      }
-    );
-    await response.json();
-    window.location.reload();
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_APP_URL}/product/${selectedProduct.id}/adjust-stock`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({ amount }),
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) throw new Error(result.message || "Unknown error");
+
+      toast.success("Stock updated successfully!", {
+        style: { backgroundColor: "green", color: "white" },
+      });
+
+      setAmount(0);
+      setSelectedProduct(undefined);
+
+      setTimeout(() => router.refresh(), 500);
+    } catch (error: any) {
+      toast.error(`Error: ${error.message || "Something went wrong"}`, {
+        style: { backgroundColor: "red", color: "white" },
+      });
+    } finally {
+      setLoadingSubmit(false);
+    }
   };
 
   return (
     <div className="flex items-center gap-x-4">
-      {/* Product Selector */}
       <div className="flex items-center gap-x-2">
         <p className="text-sm text-muted-foreground">Product:</p>
         <Popover open={open} onOpenChange={setOpen}>
@@ -84,7 +107,14 @@ export default function Search() {
                 onValueChange={handleSearch}
               />
               <CommandList>
-                <CommandEmpty>{query.length === 0 ? 'Type letters to find product' : 'No results found'}.</CommandEmpty>
+                <CommandEmpty>
+                  {loadingSearch
+                    ? "Loading..."
+                    : query.length === 0
+                    ? "Type letters to find product"
+                    : "No results found"}
+                  .
+                </CommandEmpty>
                 <CommandGroup>
                   {product.map((p: Product) => (
                     <CommandItem
@@ -105,20 +135,22 @@ export default function Search() {
         </Popover>
       </div>
 
-      {/* Delta Input */}
       <div className="flex items-center gap-x-2">
         <label className="text-sm text-muted-foreground">Delta:</label>
         <input
           type="number"
           className="border rounded-md px-2 py-1 w-[80px]"
           value={amount}
-          onChange={(e) => setAmount(e.target.value)}
+          onChange={(e) => setAmount(parseInt(e.target.value))}
         />
       </div>
 
-      {/* Submit Button */}
-      <Button onClick={() => handleUpdate()} className="px-4">
-        Submit
+      <Button
+        onClick={() => handleUpdate()}
+        className="px-4"
+        disabled={!!loadingSubmit}
+      >
+        {loadingSubmit ? "Loading..." : "Submit"}
       </Button>
     </div>
   );

@@ -10,6 +10,8 @@ import {
 import { Package, ShoppingBag } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { useCart } from "../context/CartContext";
+import { toast } from "sonner";
 
 type Product = {
   id: number;
@@ -46,6 +48,8 @@ export default function Items({
   const observerRef = useRef(null);
   const router = useRouter();
 
+  const { refreshCart } = useCart();
+
   const loadMore = async () => {
     setLoading(true);
 
@@ -81,7 +85,12 @@ export default function Items({
 
     localStorage.setItem("carts", JSON.stringify(userCart));
 
-    window.location.replace("/");
+    toast.success("Product successfully added to cart", {
+      style: { backgroundColor: "green", color: "white" },
+    });
+
+    refreshCart();
+    router.refresh();
   }
 
   useEffect(() => {
@@ -125,7 +134,7 @@ export default function Items({
               >
                 <CardHeader className="pb-2">
                   <div className="w-full h-[200px] flex items-center justify-center">
-                    <img src={i.image} className="h-full object-cover" />
+                    <img src={i.image} className="h-full object-contain" />
                   </div>
                 </CardHeader>
                 <CardContent className="flex-grow flex flex-col">
