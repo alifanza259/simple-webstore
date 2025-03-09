@@ -136,30 +136,33 @@ export default async function AdminProduct({
               {meta.totalItems} entries
             </div>
             <div className="ml-auto flex space-x-2">
-              <Link
-                href={`/admin/products?title=${title}&category=${category}&page=${
-                  parseInt(page) - 1
-                }&perPage=${perPage}`}
-              >
-                <Button
-                  disabled={parseInt(page) === 1}
-                  className="cursor-pointer"
+              {parseInt(page) > 1 ? (
+                <Link
+                  href={`/admin/products?title=${title}&category=${category}&page=${
+                    parseInt(page) - 1
+                  }&perPage=${perPage}`}
                 >
+                  <Button className="cursor-pointer">Previous</Button>
+                </Link>
+              ) : (
+                <Button disabled className="opacity-50 cursor-not-allowed">
                   Previous
                 </Button>
-              </Link>
-              <Link
-                href={`/admin/products?title=${title}&category=${category}&page=${
-                  parseInt(page) + 1
-                }&perPage=${perPage}`}
-              >
-                <Button
-                  disabled={parseInt(page) >= meta.totalPages}
-                  className="cursor-pointer"
+              )}
+
+              {parseInt(page) < meta.totalPages ? (
+                <Link
+                  href={`/admin/products?title=${title}&category=${category}&page=${
+                    parseInt(page) + 1
+                  }&perPage=${perPage}`}
                 >
+                  <Button className="cursor-pointer">Next</Button>
+                </Link>
+              ) : (
+                <Button disabled className="opacity-50 cursor-not-allowed">
                   Next
                 </Button>
-              </Link>
+              )}
             </div>
           </div>
         </CardFooter>
